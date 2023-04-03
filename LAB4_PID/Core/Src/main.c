@@ -44,7 +44,7 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint32_t QEIReadPosition;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,6 +93,8 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -102,6 +104,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
+
   }
   /* USER CODE END 3 */
 }
