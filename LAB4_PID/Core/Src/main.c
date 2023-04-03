@@ -45,6 +45,22 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t QEIReadPosition;
+
+uint32_t QEIReadRaw;
+float angle;
+
+typedef struct _QEIStructure
+{
+	uint32_t data[2];
+	uint64_t timestamp[2];
+
+	float QETPosition;
+	float QEIVelocity;
+}QEIStructureTypedef;
+QEIStructureTypedef QEIData = {0};
+
+uint64_t _micros = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,6 +69,10 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
+
+inline uint64_t micros();
+void QEIEncoderPositionVelocity_Update();
+
 
 /* USER CODE END PFP */
 
@@ -105,7 +125,21 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
+//	  static uint32_t timestamp = 0;
+//	  if(HAL_GetTick() > timestamp)
+//	  {
+//		  timestamp = HAL_GetTick() + 500;
+//		  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
+//		  printf("Position = %ld\n", QEIReadPosition);
+//	  }
+
+	  static uint64_t timestamp = 0;
+	  int64_t currentTime = micros();
+	  if(currentTime > timestamp)//10 Hz
+	  {
+		  timestamp = currentTime + 100000;
+		  QEIEncoderPositionVelocity_Update();
+	  }
 
   }
   /* USER CODE END 3 */
@@ -273,6 +307,43 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim == &htim5)
+	{
+		_micros += UINT32_MAX;
+	}
+}
+
+uint64_t micros()
+{
+	return __HAL_TIM_GET_COUNTER(&htim5)+_micros;
+}
+
+void QEIEncoderPositionVelocity_Update()
+{
+	//collect data
+	QEIData.timestamp[0] = micros();
+	uint32_t counterPosition = __HAL_TIM_GET_COUNTER(&htim3);
+	QEIData.data[0] = counterPosition;
+
+	//calculation
+	QEIData.QETPosition = counterPosition % 3072;
+
+	int32_t diffposition = QEIData.data[0]-QEIData.data[1];
+	float difftime = QEIData.timestamp[0]-QEIData.timestamp[1];
+
+
+	//handle wrap-around
+	if(diffposition> QEI_PERIOD>>1) diffposition -= QEI_PERIOD;
+	if(diffposition< -(QEI_PERIOD)>>1) diffposition += QEI_PERIOD;
+
+	//calculate angular velocity in pulse per sec
+	QEIData.QEIVelocity = (diffposition * 1000000)/difftime;
+
+	QEIData.data[1] = QEIData.data[0];
+	QEIData.timestamp[1] = QEIData.timestamp[0];
+}
 
 /* USER CODE END 4 */
 
