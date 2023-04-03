@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "arm_math.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,6 +47,15 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t QEIReadPosition;
+//uint32_t BITtoRadius;
+
+float duty = 0;
+
+arm_pid_instance_f32 PID = {0};
+float BITtoRadius = 0;
+float setposition = 0;
+float Vfeedback = 0;
+
 
 //uint32_t QEIReadRaw;
 //float angle;
@@ -75,6 +86,8 @@ static void MX_TIM3_Init(void);
 
 
 /* USER CODE END PFP */
+
+float dutysetfunction(float VIn);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
@@ -115,6 +128,11 @@ int main(void)
 
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
+  	  PID.Kp = 0.1;
+  	  PID.Ki = 0.00001;
+  	  PID.Kd = 0.1;
+  	  arm_pid_init_f32(&PID,0);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -128,9 +146,16 @@ int main(void)
 	  static uint32_t timestamp = 0;
 	  if(HAL_GetTick() > timestamp)
 	  {
-		  timestamp = HAL_GetTick() + 500;
+		  timestamp = HAL_GetTick() + 10;
 		  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
-		  printf("Position = %ld\n", QEIReadPosition);
+		  // printf("Position = %ld\n", QEIReadPosition);
+		  BITtoRadius = (QEIReadPosition*360)/3072;
+
+		  Vfeedback = arm_pid_f32(&PID,setposition - BITtoRadius);
+		  duty = dutysetfunction(Vfeedback);
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,duty);
+		  printf("Radius = %ld\n", BITtoRadius);
+
 	  }
 
 //	  static uint64_t timestamp = 0;
@@ -318,6 +343,22 @@ int _write(int file,char *ptr,int len)
 	}
 	return len;
 }
+
+float dutysetfunction(float VIn)
+{
+	float duty = 0;
+//	if(-1 < setposition - BITtoRadius < 1)
+//	{
+//		duty = 0;
+//	}
+//	else
+//	{
+	duty = (VIn * 100)/5;
+//	}
+	return duty;
+
+}
+
 
 //void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //{
