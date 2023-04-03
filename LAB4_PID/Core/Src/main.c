@@ -139,9 +139,9 @@ int main(void)
   	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
-  	  PID.Kp = 0.1;
-  	  PID.Ki = 0.00001;
-  	  PID.Kd = 0.1;
+  	  PID.Kp = 0;
+  	  PID.Ki = 0;
+  	  PID.Kd = 0;
   	  arm_pid_init_f32(&PID,0);
 
   /* USER CODE END 2 */
@@ -163,8 +163,8 @@ int main(void)
 		  BITtoRadius = (QEIReadPosition*360)/3072;
 
 		  Vfeedback = arm_pid_f32(&PID,setposition - BITtoRadius);
-		  duty = dutyset(Vfeedback);
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,duty);
+//		  duty = dutyset(Vfeedback);
+		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,Vfeedback);
 		  printf("Radius = %ld\n", BITtoRadius);
 
 	  }
@@ -504,20 +504,21 @@ int _write(int file,char *ptr,int len)
 	return len;
 }
 
-float dutyset(float VIn)
-{
-	float duty = 0;
-//	if(-1 < setposition - BITtoRadius < 1)
-//	{
-//		duty = 0;
-//	}
-//	else
-//	{
-	duty = (VIn * 1000)/5;
-//	}
-	return duty;
-
-}
+//float dutyset(float VIn)
+//{
+//	float duty = 0;
+////	if(-1 < setposition - BITtoRadius < 1)
+////	{
+////		duty = 0;
+////	}
+////	else
+////	{
+////	duty = (VIn * 1000)/5;
+////	}
+//	duty = VIn * 10;
+//	return duty;
+//
+//}
 
 
 //void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
