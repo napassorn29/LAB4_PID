@@ -49,17 +49,16 @@ DMA_HandleTypeDef hdma_tim2_ch1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
 uint32_t QEIReadPosition;
-//uint32_t BITtoRadius;
 
 float duty = 500;
-
 int reset = 0;
 
 arm_pid_instance_f32 PID = {0};
 float BITtoRadius = 0;
 float RadiusOfMotor = 0;
-float setposition = 2000;
+float setposition = 0;
 float Vfeedback = 0;
 
 typedef struct _QEIStructure
@@ -68,21 +67,6 @@ typedef struct _QEIStructure
 	float QETPosition;
 }QEIStructureTypedef;
 QEIStructureTypedef QEIData = {0};
-
-//uint32_t QEIReadRaw;
-//float angle;
-//
-//typedef struct _QEIStructure
-//{
-//	uint32_t data[2];
-//	uint64_t timestamp[2];
-//
-//	float QETPosition;
-//	float QEIVelocity;
-//}QEIStructureTypedef;
-//QEIStructureTypedef QEIData = {0};
-//
-//uint64_t _micros = 0;
 
 /* USER CODE END PV */
 
@@ -98,10 +82,8 @@ static void MX_TIM1_Init(void);
 
 float dutyset(float VIn);
 void Drivemotor();
-
-//inline uint64_t micros();
-//void QEIEncoderPositionVelocity_Update();
-
+void QEIEncoderPosition();
+void PIDcontroller();
 
 /* USER CODE END PFP */
 
@@ -153,7 +135,7 @@ int main(void)
 
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
-  	  PID.Kp = 12.5;
+  	  PID.Kp = 12.77;
   	  PID.Ki = 0;
   	  PID.Kd = 0.01;
   	  arm_pid_init_f32(&PID,reset);
@@ -172,19 +154,9 @@ int main(void)
 	  if(HAL_GetTick() > timestamp)
 	  {
 		  timestamp = HAL_GetTick() + 50;
-		  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
-		  // printf("Position = %ld\n", QEIReadPosition);
-		  BITtoRadius = (QEIReadPosition*360.0)/3072.0;
-
-		  QEIEncoderPositionVelocity_Update();
-
-		  Vfeedback = arm_pid_f32(&PID,setposition - RadiusOfMotor);
-
-		  if(Vfeedback > 1000) Vfeedback = 1000;
-		  else if(Vfeedback < -1000) Vfeedback = -1000;
-
+		  QEIEncoderPosition();
+		  PIDcontroller();
 		  Drivemotor();
-
 	  }
   }
   /* USER CODE END 3 */
@@ -505,20 +477,12 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/*re-implement _write function of printf*/
-int _write(int file,char *ptr,int len)
-{
-	int i ;
 
-	for(i = 0;i<len;i++)
-	{
-		ITM_SendChar(*ptr++);
-	}
-	return len;
-}
-
-void QEIEncoderPositionVelocity_Update()
+void QEIEncoderPosition()
 {
+	QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
+	BITtoRadius = (QEIReadPosition*360.0)/3072.0;
+
 	//collect data
 	QEIData.data[0] = BITtoRadius;
 
@@ -540,10 +504,15 @@ void QEIEncoderPositionVelocity_Update()
 	{
 		RadiusOfMotor = RadiusOfMotor + diffposition;
 	}
-
-	//calculate angular velocity in pulse per sec
-
 	QEIData.data[1] = QEIData.data[0];
+}
+
+void PIDcontroller()
+{
+	 Vfeedback = arm_pid_f32(&PID,setposition - RadiusOfMotor);
+
+	 if(Vfeedback > 1000) Vfeedback = 1000;
+	 else if(Vfeedback < -1000) Vfeedback = -1000;
 }
 
 void Drivemotor()
@@ -561,63 +530,6 @@ void Drivemotor()
 	}
 
 }
-
-
-
-//float dutyset(float VIn)
-//{
-//	float duty = 0;
-////	if(-1 < setposition - BITtoRadius < 1)
-////	{
-////		duty = 0;
-////	}
-////	else
-////	{
-////	duty = (VIn * 1000)/5;
-////	}
-//	duty = VIn * 10;
-//	return duty;
-//
-//}
-
-
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//	if(htim == &htim5)
-//	{
-//		_micros += UINT32_MAX;
-//	}
-//}
-//
-//uint64_t micros()
-//{
-//	return __HAL_TIM_GET_COUNTER(&htim5)+_micros;
-//}
-//
-//void QEIEncoderPositionVelocity_Update()
-//{
-//	//collect data
-//	QEIData.timestamp[0] = micros();
-//	uint32_t counterPosition = __HAL_TIM_GET_COUNTER(&htim3);
-//	QEIData.data[0] = counterPosition;
-//
-//	//calculation
-//	QEIData.QETPosition = counterPosition % 3072;
-//
-//	int32_t diffposition = QEIData.data[0]-QEIData.data[1];
-//	float difftime = QEIData.timestamp[0]-QEIData.timestamp[1];
-//
-//
-//	//handle wrap-around
-//	if(diffposition> QEI_PERIOD>>1) diffposition -= QEI_PERIOD;
-//	if(diffposition< -(QEI_PERIOD)>>1) diffposition += QEI_PERIOD;
-//
-//	//calculate angular velocity in pulse per sec
-//	QEIData.QEIVelocity = (diffposition * 1000000)/difftime;
-//
-//	QEIData.data[1] = QEIData.data[0];
-//	QEIData.timestamp[1] = QEIData.timestamp[0];
-//}
 
 /* USER CODE END 4 */
 
