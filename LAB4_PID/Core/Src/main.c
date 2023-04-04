@@ -59,7 +59,7 @@ int reset = 0;
 arm_pid_instance_f32 PID = {0};
 float BITtoRadius = 0;
 float RadiusOfMotor = 0;
-float setposition = 0;
+float setposition = 2000;
 float Vfeedback = 0;
 
 typedef struct _QEIStructure
@@ -97,6 +97,7 @@ static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 float dutyset(float VIn);
+void Drivemotor();
 
 //inline uint64_t micros();
 //void QEIEncoderPositionVelocity_Update();
@@ -147,6 +148,9 @@ int main(void)
   	  HAL_TIM_Base_Start(&htim1);
   	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
+  	  HAL_TIM_Base_Start(&htim1);
+  	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
   	  PID.Kp = 12.5;
@@ -178,18 +182,10 @@ int main(void)
 
 		  if(Vfeedback > 1000) Vfeedback = 1000;
 		  else if(Vfeedback < -1000) Vfeedback = -1000;
-		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,Vfeedback);
+
+		  Drivemotor();
 
 	  }
-
-//	  static uint64_t timestamp = 0;
-//	  int64_t currentTime = micros();
-//	  if(currentTime > timestamp)//10 Hz
-//	  {
-//		  timestamp = currentTime + 100000;
-//		  QEIEncoderPositionVelocity_Update();
-//	  }
-
   }
   /* USER CODE END 3 */
 }
@@ -294,6 +290,10 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -545,6 +545,24 @@ void QEIEncoderPositionVelocity_Update()
 
 	QEIData.data[1] = QEIData.data[0];
 }
+
+void Drivemotor()
+{
+	if(Vfeedback >= 0)
+	{
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,Vfeedback);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,0);
+	}
+	else if (Vfeedback < 0)
+	{
+		Vfeedback = -Vfeedback;
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,Vfeedback);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,0);
+	}
+
+}
+
+
 
 //float dutyset(float VIn)
 //{
