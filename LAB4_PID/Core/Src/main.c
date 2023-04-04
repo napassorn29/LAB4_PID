@@ -54,11 +54,20 @@ uint32_t QEIReadPosition;
 
 float duty = 500;
 
+int reset = 0;
+
 arm_pid_instance_f32 PID = {0};
 float BITtoRadius = 0;
+float RadiusOfMotor = 0;
 float setposition = 0;
 float Vfeedback = 0;
 
+typedef struct _QEIStructure
+{
+	float data[2];
+	float QETPosition;
+}QEIStructureTypedef;
+QEIStructureTypedef QEIData = {0};
 
 //uint32_t QEIReadRaw;
 //float angle;
@@ -137,12 +146,13 @@ int main(void)
 
   	  HAL_TIM_Base_Start(&htim1);
   	  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
-  	  PID.Kp = 0;
+  	  PID.Kp = 12.5;
   	  PID.Ki = 0;
-  	  PID.Kd = 0;
-  	  arm_pid_init_f32(&PID,0);
+  	  PID.Kd = 0.01;
+  	  arm_pid_init_f32(&PID,reset);
 
   /* USER CODE END 2 */
 
@@ -160,12 +170,15 @@ int main(void)
 		  timestamp = HAL_GetTick() + 50;
 		  QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
 		  // printf("Position = %ld\n", QEIReadPosition);
-		  BITtoRadius = (QEIReadPosition*360)/3072;
+		  BITtoRadius = (QEIReadPosition*360.0)/3072.0;
 
-		  Vfeedback = arm_pid_f32(&PID,setposition - BITtoRadius);
-//		  duty = dutyset(Vfeedback);
+		  QEIEncoderPositionVelocity_Update();
+
+		  Vfeedback = arm_pid_f32(&PID,setposition - RadiusOfMotor);
+
+		  if(Vfeedback > 1000) Vfeedback = 1000;
+		  else if(Vfeedback < -1000) Vfeedback = -1000;
 		  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,Vfeedback);
-		  printf("Radius = %ld\n", BITtoRadius);
 
 	  }
 
@@ -502,6 +515,35 @@ int _write(int file,char *ptr,int len)
 		ITM_SendChar(*ptr++);
 	}
 	return len;
+}
+
+void QEIEncoderPositionVelocity_Update()
+{
+	//collect data
+	QEIData.data[0] = BITtoRadius;
+
+	//calculation
+	float diffposition = QEIData.data[0]-QEIData.data[1];
+
+	//handle wrap-around
+	if(diffposition > 180)
+	{
+		diffposition = diffposition - 360.0;
+		RadiusOfMotor = RadiusOfMotor + diffposition;
+	}
+	else if(diffposition< -180)
+	{
+		diffposition = diffposition + 360.0;
+		RadiusOfMotor = RadiusOfMotor + diffposition;
+	}
+	else
+	{
+		RadiusOfMotor = RadiusOfMotor + diffposition;
+	}
+
+	//calculate angular velocity in pulse per sec
+
+	QEIData.data[1] = QEIData.data[0];
 }
 
 //float dutyset(float VIn)
