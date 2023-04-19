@@ -104,8 +104,7 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. *  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -135,9 +134,12 @@ int main(void)
 
   	  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_1 | TIM_CHANNEL_2);
 
-  	  PID.Kp = 12.77;
-  	  PID.Ki = 0;
-  	  PID.Kd = 0.01;
+      PID.Kp = 40.5;
+      PID.Ki = 0;
+      PID.Kd = 0;
+//      PID.Ki = 0.01;
+//      //PID.Ki = 0.000000002098;
+//      PID.Kd = 0.00988;
   	  arm_pid_init_f32(&PID,reset);
 
   /* USER CODE END 2 */
@@ -153,7 +155,7 @@ int main(void)
 	  static uint32_t timestamp = 0;
 	  if(HAL_GetTick() > timestamp)
 	  {
-		  timestamp = HAL_GetTick() + 50;
+		  timestamp = HAL_GetTick() + 5;
 		  QEIEncoderPosition();
 		  PIDcontroller();
 		  Drivemotor();
@@ -524,7 +526,7 @@ void Drivemotor()
 	}
 	else if (Vfeedback < 0)
 	{
-		Vfeedback = -Vfeedback;
+		Vfeedback = Vfeedback*(-1);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2,Vfeedback);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,0);
 	}
