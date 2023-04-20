@@ -2023,7 +2023,7 @@ void QEIEncoderPosition()
  80012ee:	6a5b      	ldr	r3, [r3, #36]	; 0x24
  80012f0:	4a3b      	ldr	r2, [pc, #236]	; (80013e0 <QEIEncoderPosition+0xfc>)
  80012f2:	6013      	str	r3, [r2, #0]
-	BITtoRadius = (QEIReadPosition*360.0)/3072.0;
+	BITtoDegree = (QEIReadPosition*360.0)/3072.0;
  80012f4:	4b3a      	ldr	r3, [pc, #232]	; (80013e0 <QEIEncoderPosition+0xfc>)
  80012f6:	681b      	ldr	r3, [r3, #0]
  80012f8:	4618      	mov	r0, r3
@@ -2048,7 +2048,7 @@ void QEIEncoderPosition()
  800132a:	6013      	str	r3, [r2, #0]
 
 	//collect data
-	QEIData.data[0] = BITtoRadius;
+	QEIData.data[0] = BITtoDegree;
  800132c:	4b2f      	ldr	r3, [pc, #188]	; (80013ec <QEIEncoderPosition+0x108>)
  800132e:	681b      	ldr	r3, [r3, #0]
  8001330:	4a2f      	ldr	r2, [pc, #188]	; (80013f0 <QEIEncoderPosition+0x10c>)
@@ -2076,7 +2076,7 @@ void QEIEncoderPosition()
  800135e:	ed9f 7a26 	vldr	s14, [pc, #152]	; 80013f8 <QEIEncoderPosition+0x114>
  8001362:	ee77 7ac7 	vsub.f32	s15, s15, s14
  8001366:	edc7 7a01 	vstr	s15, [r7, #4]
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
  800136a:	4b24      	ldr	r3, [pc, #144]	; (80013fc <QEIEncoderPosition+0x118>)
  800136c:	ed93 7a00 	vldr	s14, [r3]
  8001370:	edd7 7a01 	vldr	s15, [r7, #4]
@@ -2097,7 +2097,7 @@ void QEIEncoderPosition()
  8001396:	ed9f 7a18 	vldr	s14, [pc, #96]	; 80013f8 <QEIEncoderPosition+0x114>
  800139a:	ee77 7a87 	vadd.f32	s15, s15, s14
  800139e:	edc7 7a01 	vstr	s15, [r7, #4]
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
  80013a2:	4b16      	ldr	r3, [pc, #88]	; (80013fc <QEIEncoderPosition+0x118>)
  80013a4:	ed93 7a00 	vldr	s14, [r3]
  80013a8:	edd7 7a01 	vldr	s15, [r7, #4]
@@ -2108,7 +2108,7 @@ void QEIEncoderPosition()
 	}
 	else
 	{
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
  80013b8:	4b10      	ldr	r3, [pc, #64]	; (80013fc <QEIEncoderPosition+0x118>)
  80013ba:	ed93 7a00 	vldr	s14, [r3]
  80013be:	edd7 7a01 	vldr	s15, [r7, #4]
@@ -2144,7 +2144,7 @@ void PIDcontroller()
  8001404:	b480      	push	{r7}
  8001406:	b085      	sub	sp, #20
  8001408:	af00      	add	r7, sp, #0
-	 Vfeedback = arm_pid_f32(&PID,setposition - RadiusOfMotor);
+	 Vfeedback = arm_pid_f32(&PID,setposition - DegreeOfMotor);
  800140a:	4b2e      	ldr	r3, [pc, #184]	; (80014c4 <PIDcontroller+0xc0>)
  800140c:	ed93 7a00 	vldr	s14, [r3]
  8001410:	4b2d      	ldr	r3, [pc, #180]	; (80014c8 <PIDcontroller+0xc4>)

@@ -56,8 +56,8 @@ float duty = 500;
 int reset = 0;
 
 arm_pid_instance_f32 PID = {0};
-float BITtoRadius = 0;
-float RadiusOfMotor = 0;
+float BITtoDegree = 0;
+float DegreeOfMotor = 0;
 float setposition = 0;
 float Vfeedback = 0;
 
@@ -483,10 +483,10 @@ static void MX_GPIO_Init(void)
 void QEIEncoderPosition()
 {
 	QEIReadPosition = __HAL_TIM_GET_COUNTER(&htim3);
-	BITtoRadius = (QEIReadPosition*360.0)/3072.0;
+	BITtoDegree = (QEIReadPosition*360.0)/3072.0;
 
 	//collect data
-	QEIData.data[0] = BITtoRadius;
+	QEIData.data[0] = BITtoDegree;
 
 	//calculation
 	float diffposition = QEIData.data[0]-QEIData.data[1];
@@ -495,23 +495,23 @@ void QEIEncoderPosition()
 	if(diffposition > 180)
 	{
 		diffposition = diffposition - 360.0;
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
 	}
 	else if(diffposition< -180)
 	{
 		diffposition = diffposition + 360.0;
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
 	}
 	else
 	{
-		RadiusOfMotor = RadiusOfMotor + diffposition;
+		DegreeOfMotor = DegreeOfMotor + diffposition;
 	}
 	QEIData.data[1] = QEIData.data[0];
 }
 
 void PIDcontroller()
 {
-	 Vfeedback = arm_pid_f32(&PID,setposition - RadiusOfMotor);
+	 Vfeedback = arm_pid_f32(&PID,setposition - DegreeOfMotor);
 
 	 if(Vfeedback > 1000) Vfeedback = 1000;
 	 else if(Vfeedback < -1000) Vfeedback = -1000;
